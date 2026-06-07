@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Central - CodeMaster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Efecto de borde neón para las tarjetas */
+        .neon-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .neon-card:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1);
+            border-color: rgba(0, 255, 255, 0.6);
+            transform: translateY(-5px);
+        }
+        .neon-card-purple:hover {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.1);
+            border-color: rgba(168, 85, 247, 0.6);
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-mono selection:bg-cyan-500 selection:text-white relative flex flex-col">
+
+    <canvas id="matrix-canvas" class="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none"></canvas>
+
+    <header class="relative z-10 border-b border-cyan-900/50 bg-gray-950/80 backdrop-blur-md px-6 py-4 flex justify-between items-center shadow-[0_4px_20px_rgba(0,255,255,0.1)]">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]">🤖</span>
+            <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest uppercase">
+                CodeMaster_OS
+            </h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-sm text-cyan-200">User: <span class="text-white font-bold" th:text="${nombreEstudiante}">Estudiante</span></span>
+            <a th:href="@{/auth/logout}" class="border border-red-500/50 text-red-400 hover:bg-red-500/20 px-4 py-1 rounded transition-colors text-sm shadow-[0_0_10px_rgba(255,0,0,0.2)]">
+                Desconectar
+            </a>
+        </div>
+    </header>
+
+    <main class="relative z-10 flex-1 container mx-auto px-6 py-12">
+        
+        <div class="mb-10 text-center md:text-left border-l-4 border-cyan-500 pl-4">
+            <h2 class="text-2xl text-white font-bold tracking-wide">Panel de Control Principal</h2>
+            <p class="text-cyan-400 text-sm mt-1">>> Seleccione un módulo de ejecución</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <a th:href="@{/retos}" class="neon-card rounded-xl p-6 group cursor-pointer flex flex-col items-start">
+                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]">💻</div>
+                <h3 class="text-xl text-cyan-300 font-bold mb-2 uppercase">Entrenamiento Libre</h3>
+                <p class="text-gray-400 text-sm flex-1 mb-4">Accede a retos de programación asíncronos y recibe feedback estructural de la IA.</p>
+                <span class="text-cyan-400 text-xs font-bold bg-cyan-900/30 px-2 py-1 rounded">>> Ejecutar_Módulo</span>
+            </a>
+
+            <a href="#" class="neon-card-purple neon-card rounded-xl p-6 group cursor-pointer flex flex-col items-start">
+                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]">🏫</div>
+                <h3 class="text-xl text-purple-300 font-bold mb-2 uppercase">Aulas Virtuales</h3>
+                <p class="text-gray-400 text-sm flex-1 mb-4">Ingresa con un código para resolver asignaciones y quizzes controlados por docentes.</p>
+                <span class="text-purple-400 text-xs font-bold bg-purple-900/30 px-2 py-1 rounded">>> Conectar_Sala</span>
+            </a>
+
+            <a href="#" class="neon-card rounded-xl p-6 group cursor-pointer flex flex-col items-start">
+                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(0,255,100,0.6)]">📊</div>
+                <h3 class="text-xl text-green-300 font-bold mb-2 uppercase">Métricas & Ranking</h3>
+                <p class="text-gray-400 text-sm flex-1 mb-4">Visualiza tus estadísticas semanales, puntos acumulados y análisis cognitivo.</p>
+                <span class="text-green-400 text-xs font-bold bg-green-900/30 px-2 py-1 rounded border border-green-800/50">>> Ver_Estadísticas</span>
+            </a>
+
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = '01010101<>{}[]/\\'.split('');
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+        for(let x = 0; x < columns; x++) drops[x] = 1;
+
+        let hue = 180; 
+
+        function draw() {
+            ctx.fillStyle = 'rgba(17, 24, 39, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            hue = (hue + 0.3) % 360; 
+            ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 50); 
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
