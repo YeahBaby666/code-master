@@ -13,12 +13,20 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
+import com.codemaster.demo.model.RankingSemanal;
+import com.codemaster.demo.repository.RankingSemanalRepository;
+import java.time.LocalDate;
+import java.time.temporal.WeekFields;
+import java.util.Locale;
+
 @Controller
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final EstudianteRepository estudianteRepository;
+    private final RankingSemanalRepository rankingSemanalRepository;
+
 
     // Método de Hashing nativo (SHA-256)
     private String hashearContrasena(String password) {
@@ -76,7 +84,21 @@ public class AuthController {
         nuevoEstudiante.setCorreo(correo);
         nuevoEstudiante.setContrasena(hashearContrasena(contrasena));
 
-        estudianteRepository.save(nuevoEstudiante);
+        Estudiante estudianteGuardado = estudianteRepository.save(nuevoEstudiante);
+
+LocalDate fechaActual = LocalDate.now();
+int anio = fechaActual.getYear();
+int semana = fechaActual.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
+
+RankingSemanal ranking = new RankingSemanal();
+ranking.setEstudiante(estudianteGuardado);
+ranking.setAnio(anio);
+ranking.setSemana(semana);
+ranking.setPuntosAcumulados(0);
+ranking.setProblemasResueltos(0);
+
+rankingSemanalRepository.save(ranking);
+
 
         redirectAttributes.addFlashAttribute("exito", "Registro exitoso. Inicia sesión para continuar.");
         return "redirect:/auth/login";

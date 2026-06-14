@@ -1,6 +1,6 @@
 package com.codemaster.demo.model;
 
-
+import lombok.Data;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -9,7 +9,9 @@ import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
+
 // 6. Ranking Semanal
+@Data
 @Entity
 @Table(name = "ranking_semanal")
 public class RankingSemanal {
