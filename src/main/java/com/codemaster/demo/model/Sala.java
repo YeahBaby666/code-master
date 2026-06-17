@@ -1,16 +1,15 @@
 package com.codemaster.demo.model;
 
-
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+
 // 2. Sala (Equivalente a un "Curso" o "Sección" dictada por un docente)
+@Getter
+@Setter
 @Entity
 @Table(name = "salas")
 public class Sala {
@@ -23,10 +22,13 @@ public class Sala {
     private Docente docente;
 
     @Column(nullable = false)
-    private String nombre; // Ej: "Programación Orientada a Objetos - Sección A"
+    private String nombre;
 
-    @Column(unique = true, nullable = false, length = 10)
-    private String codigoAcceso; // Código corto (Ej: "X7B9-PW") para que los alumnos se unan
+    @Column(unique = true, nullable = false, length = 20)
+    private String codigoAcceso;
+
+    @Column(nullable = false)
+    private String contrasenaSala = "";
 
     @Column(nullable = false)
     private Boolean activa = true;

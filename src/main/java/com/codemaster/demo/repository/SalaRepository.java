@@ -1,5 +1,6 @@
 package com.codemaster.demo.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,8 +15,8 @@ import com.codemaster.demo.model.Sala;
 @Repository
 public interface SalaRepository extends JpaRepository<Sala, UUID> {
     
-    // JOIN FETCH: Trae la sala y su docente en una sola consulta SQL.
-    // Evita que Hibernate dispare un SELECT adicional cuando llamemos a sala.getDocente().
     @Query("SELECT s FROM Sala s JOIN FETCH s.docente WHERE s.codigoAcceso = :codigoAcceso AND s.activa = true")
     Optional<Sala> findByCodigoAccesoActiva(@Param("codigoAcceso") String codigoAcceso);
+
+    List<Sala> findByDocenteId(UUID docenteId);
 }

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeMaster - Entorno del Estudiante</title>
+    <link rel="icon" href="data:,"> 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: monospace; }
+        .CodeMirror { height: auto; border-radius: 0.5rem; font-family: monospace; font-size: 14px; }
+        .consola { max-height: 200px; overflow-y: auto; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .badge-resuelto { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-5xl mx-auto space-y-8">
+        <header class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center gap-4 flex-wrap">
+                <div>
+                    <h1 class="text-3xl font-bold text-cyan-400">👨‍💻 Espacio de Trabajo: <span class="text-white">RETO-77X</span></h1>
+                    <p class="text-gray-400 mt-2">Conexión al Motor: <span id="status" class="text-yellow-400">Iniciando entorno aislado...</span></p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-modo-estudiante" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold transition">Modo Estudiante</button>
+                    <button id="btn-modo-profesor" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-bold transition">Modo Profesor</button>
+                    <button id="btn-agregar-celda" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold transition hidden">+ Añadir Celda</button>
+                    <button onclick="MotorEjecucion.ejecutarSecuenciaGlobal()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(34,197,94,0.3)] transition">
+                        ▶ Ejecutar Mi Código
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex justify-center space-x-4 border-t border-gray-700 mt-6 pt-4 flex-wrap">
+                <span class="text-gray-500 text-sm self-center">Simuladores de Red Externa:</span>
+                <button onclick="ConexionProfesor.simularComandosRed()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-1 rounded text-sm font-bold transition">📡 Recibir Actualización del Profesor</button>
+                <button onclick="API_IA.simularRespuestaIA()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-1 rounded text-sm font-bold transition">🧠 Enviar a Revisión IA</button>
+            </div>
+        </header>
+
+        <div id="contenedor-celdas" class="space-y-8"></div>
+    </div>
+
+    <div id="modal-editor" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
+        <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl text-cyan-300 font-bold">Editar variables de la celda</h3>
+                <button onclick="InterfazUI.cerrarModal()" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="text-sm text-gray-300">Secuencia<input id="modal-seq" type="number" class="w-full mt-1 rounded bg-gray-800 border border-gray-700 p-2"></label>
+                <label class="text-sm text-gray-300">Título<input id="modal-titulo" type="text" class="w-full mt-1 rounded bg-gray-800 border border-gray-700 p-2"></label>
+                <label class="text-sm text-gray-300">Resolver<input id="modal-resolver" type="checkbox" class="ml-2"></label>
+                <label class="text-sm text-gray-300">Respuesta esperada<input id="modal-respuesta" type="text" class="w-full mt-1 rounded bg-gray-800 border border-gray-700 p-2"></label>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="InterfazUI.cerrarModal()" class="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600">Cancelar</button>
+                <button onclick="InterfazUI.guardarModal()" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. ESTADO GLOBAL
+        // ==========================================
+        const appState = {
+            id_ejercicio: "RETO-77X",
+            cursoId: "curso-demo",
+            profesorId: "profesor-001",
+            modo: "estudiante",
+            celdaActualId: "c_1",
+            modalCeldaId: null,
+            celdas: [
+                { id: "c_1", seq: 1, titulo: "Paso 1: Inicialización", codigo: "x = 10\nprint('Variable iniciada')", resolver: false, respuesta_esperada: "", resuelto: false },
+                { id: "c_2", seq: 2, titulo: "Paso 2: Operación", codigo: "# El objetivo es que la consola imprima 20\n# Multiplica x por 2\n", resolver: true, respuesta_esperada: "20", resuelto: false }
+            ],
+            editores: {},
+            outputsTemporales: {}
+        };
+
+        // ==========================================
+        // 2. GESTOR DE ESTADO
+        // ==========================================
+        const GestorEstado = {
+            modificarSeq: (id, valor) => {
+                const c = appState.celdas.find(c => c.id === id);
+                if (c) {
+                    c.seq = Number(valor) || 0;
+                    InterfazUI.renderizarTodas();
+                }
+            },
+            modificarResolver: (id, valor) => {
+                const c = appState.celdas.find(c => c.id === id);
+                if (c) {
+                    c.resolver = (valor === 'true' || valor === true);
+                    InterfazUI.renderizarTodas();
+                }
+            },
+            modificarRespuestaEsperada: (id, valor) => {
+                const c = appState.celdas.find(c => c.id === id);
+                if (c) {
+                    c.respuesta_esperada = valor || '';
+                    InterfazUI.renderizarTodas();
+                }
+            },
+            modificarTitulo: (id, valor) => {
+                const c = appState.celdas.find(c => c.id === id);
+                if (c) {
+                    c.titulo = valor || '';
+                    InterfazUI.renderizarTodas();
+                }
+            },
+            modificarCodigo: (id, valor) => {
+                const c = appState.celdas.find(c => c.id === id);
+                if (!c) return;
+                c.codigo = valor || '';
+                if (appState.editores[id] && appState.editores[id].getValue() !== valor) {
+                    appState.editores[id].setValue(valor || '');
+                }
+            },
+            procesarComandoVariable: async (id_celda, variable, valor) => {
+                switch (variable) {
+                    case 'seq': GestorEstado.modificarSeq(id_celda, valor); break;
+                    case 'resolver': GestorEstado.modificarResolver(id_celda, valor); break;
+                    case 'respuesta_esperada': GestorEstado.modificarRespuestaEsperada(id_celda, valor); break;
+                    case 'titulo': GestorEstado.modificarTitulo(id_celda, valor); break;
+                    case 'codigo': GestorEstado.modificarCodigo(id_celda, valor); break;
+                    case 'exec': await MotorEjecucion.ejecutarCeldaAsync(id_celda); break;
+                }
+            },
+            crearCelda: (nuevaCelda) => {
+                if (!nuevaCelda.id) nuevaCelda.id = 'c_' + Date.now();
+                if (!nuevaCelda.seq) nuevaCelda.seq = appState.celdas.length + 1;
+                nuevaCelda.resolver = !!nuevaCelda.resolver;
+                nuevaCelda.respuesta_esperada = nuevaCelda.respuesta_esperada || '';
+                nuevaCelda.resuelto = false;
+                appState.celdas.push(nuevaCelda);
+                appState.celdaActualId = nuevaCelda.id;
+                InterfazUI.renderizarTodas();
+            },
+            eliminarCelda: (id) => {
+                if (!id || appState.celdas.length <= 1) return;
+                appState.celdas = appState.celdas.filter(c => c.id !== id);
+                if (appState.celdaActualId === id) {
+                    appState.celdaActualId = appState.celdas[0]?.id || null;
+                }
+                delete appState.editores[id];
+                delete appState.outputsTemporales[id];
+                InterfazUI.renderizarTodas();
+            }
+        };
+
+        // ==========================================
+        // 3. COMUNICACIÓN EXTERNA (Profesor e IA)
+        // ==========================================
+        const ConexionProfesor = {
+            simularComandosRed: async () => {
+                const payloadWebSocket = [
+                    { id_celda: 'c_1', variable: 'titulo', valor: 'Paso 1: [Actualizado por el Profesor]' },
+                    { id_celda: 'c_1', variable: 'codigo', valor: "x = 50\nprint('El profesor cambió el valor base para todos a 50')" },
+                    { id_celda: 'c_2', variable: 'respuesta_esperada', valor: '100' },
+                    { id_celda: 'c_1', variable: 'exec', valor: 'true' }
+                ];
+
+                for (const comando of payloadWebSocket) {
+                    await GestorEstado.procesarComandoVariable(comando.id_celda, comando.variable, comando.valor);
+                }
+            }
+        };
+
+        const API_IA = {
+            simularRespuestaIA: () => {
+                alert('Consultando a la IA...');
+                setTimeout(() => {
+                    GestorEstado.crearCelda({
+                        id: 'c_ia_' + Date.now(),
+                        seq: 1.5,
+                        titulo: '💡 Pista de la Inteligencia Artificial',
+                        codigo: '# Recuerda que puedes reasignar variables así:\n# x = x * 2\n',
+                        resolver: false,
+                        respuesta_esperada: '',
+                        resuelto: false
+                    });
+                }, 800);
+            }
+        };
+
+        // ==========================================
+        // 4. MOTOR DE EJECUCIÓN
+        // ==========================================
+        const MotorEjecucion = {
+            worker: null,
+            resolverPromesaActual: null,
+            inicializar: () => {
+                const workerCode = `
+                    importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
+                    let pyodide = null; let ready = false;
+                    self.emitirStdout = (cellId, text) => postMessage({ type: "stdout", cellId: cellId, text: text });
+                    async function init() { pyodide = await loadPyodide(); ready = true; postMessage({ type: "status", msg: "Listo" }); }
+                    init();
+                    self.onmessage = async (e) => {
+                        if (!ready) return;
+                        const { cellId, code } = e.data;
+                        pyodide.globals.set("codigo_alumno", code);
+                        pyodide.globals.set("cell_id_actual", cellId);
+                        const pythonWrapper = \`
+import sys, js
+class CellConsole:
+    def write(self, text):
+        if text: js.emitirStdout(cell_id_actual, text)
+    def flush(self): pass
+sys.stdout = CellConsole(); sys.stderr = sys.stdout
+try: exec(codigo_alumno, {'print': print})
+except Exception as e: print(chr(10) + f"[Error de Sintaxis/Lógica]: {str(e)}")
+\`;
+                        try { await pyodide.runPythonAsync(pythonWrapper); postMessage({ type: "done", cellId: cellId }); }
+                        catch (err) { postMessage({ type: "error", cellId: cellId, text: err.message }); }
+                    };
+                `;
+                MotorEjecucion.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
+                MotorEjecucion.worker.onmessage = (e) => {
+                    const data = e.data;
+                    if (data.type === 'status') {
+                        document.getElementById('status').textContent = 'Entorno Aislado en Línea';
+                        document.getElementById('status').className = 'text-green-400';
+                        InterfazUI.renderizarTodas();
+                    } else if (data.type === 'stdout') {
+                        if (!appState.outputsTemporales[data.cellId]) appState.outputsTemporales[data.cellId] = '';
+                        appState.outputsTemporales[data.cellId] += data.text;
+                        InterfazUI.imprimirEnConsola(data.cellId, data.text);
+                    } else if (data.type === 'done' || data.type === 'error') {
+                        if (data.type === 'error') {
+                            InterfazUI.imprimirEnConsola(data.cellId, '\n' + data.text, 'text-red-500');
+                        }
+                        InterfazUI.validarCelda(data.cellId);
+                        if (MotorEjecucion.resolverPromesaActual) {
+                            MotorEjecucion.resolverPromesaActual();
+                            MotorEjecucion.resolverPromesaActual = null;
+                        }
+                    }
+                };
+            },
+            ejecutarApiProfesor: async (id, codigo) => {
+                const response = await fetch(`/api/cursos/${appState.cursoId}/ejecutar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cursoId: appState.cursoId,
+                        profesorId: appState.profesorId,
+                        celdaId: id,
+                        codigo: codigo
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error('La API no respondió correctamente');
+                }
+                return await response.json();
+            },
+            ejecutarCeldaAsync: async (id) => {
+                const celda = appState.celdas.find(c => c.id === id);
+                if (!celda) return;
+                const codigo = (appState.editores[id] && appState.editores[id].getValue()) || celda.codigo;
+                celda.codigo = codigo;
+                const consola = document.getElementById(`consola-${id}`);
+                if (consola) {
+                    consola.innerHTML = '<div class="text-gray-600 mb-1">--- Salida del Programa ---</div>';
+                }
+                appState.outputsTemporales[id] = '';
+
+                if (appState.modo === 'profesor') {
+                    try {
+                        await MotorEjecucion.ejecutarApiProfesor(id, codigo);
+                        InterfazUI.imprimirEnConsola(id, `\n[API Profesor] Ejecución enviada para curso ${appState.cursoId}.`, 'text-cyan-300');
+                        InterfazUI.validarCelda(id);
+                        return;
+                    } catch (err) {
+                        InterfazUI.imprimirEnConsola(id, '\n[API] No disponible; usando ejecución local.', 'text-yellow-500');
+                    }
+                }
+
+                return new Promise((resolve) => {
+                    MotorEjecucion.resolverPromesaActual = resolve;
+                    MotorEjecucion.worker.postMessage({ cellId: id, code: codigo });
+                });
+            },
+            ejecutarSecuenciaGlobal: async () => {
+                const celdasOrdenadas = [...appState.celdas].sort((a, b) => a.seq - b.seq);
+                for (const celda of celdasOrdenadas) {
+                    await MotorEjecucion.ejecutarCeldaAsync(celda.id);
+                }
+            }
+        };
+
+        // ==========================================
+        // 5. INTERFAZ UI
+        // ==========================================
+        const InterfazUI = {
+            abrirModal: (id) => {
+                const celda = appState.celdas.find(c => c.id === id);
+                if (!celda) return;
+                appState.modalCeldaId = id;
+                document.getElementById('modal-seq').value = celda.seq || 0;
+                document.getElementById('modal-titulo').value = celda.titulo || '';
+                document.getElementById('modal-resolver').checked = !!celda.resolver;
+                document.getElementById('modal-respuesta').value = celda.respuesta_esperada || '';
+                document.getElementById('modal-editor').classList.remove('hidden');
+                document.getElementById('modal-editor').classList.add('flex');
+            },
+            cerrarModal: () => {
+                document.getElementById('modal-editor').classList.add('hidden');
+                document.getElementById('modal-editor').classList.remove('flex');
+                appState.modalCeldaId = null;
+            },
+            guardarModal: () => {
+                const id = appState.modalCeldaId;
+                if (!id) return;
+                const celda = appState.celdas.find(c => c.id === id);
+                if (!celda) return;
+                celda.seq = Number(document.getElementById('modal-seq').value) || celda.seq;
+                celda.titulo = document.getElementById('modal-titulo').value;
+                celda.resolver = document.getElementById('modal-resolver').checked;
+                celda.respuesta_esperada = document.getElementById('modal-respuesta').value;
+                InterfazUI.cerrarModal();
+                InterfazUI.renderizarTodas();
+            },
+            sincronizarEditoresAlEstado: () => {
+                appState.celdas.forEach(celda => {
+                    if (appState.editores[celda.id]) {
+                        const valorActual = appState.editores[celda.id].getValue();
+                        if (valorActual !== celda.codigo) {
+                            appState.editores[celda.id].setValue(celda.codigo || '');
+                        }
+                    }
+                });
+            },
+            renderizarTodas: () => {
+                InterfazUI.sincronizarEditoresAlEstado();
+                const contenedor = document.getElementById('contenedor-celdas');
+                contenedor.innerHTML = '';
+                appState.editores = {};
+
+                document.getElementById('btn-modo-estudiante').classList.toggle('bg-blue-600', appState.modo === 'estudiante');
+                document.getElementById('btn-modo-estudiante').classList.toggle('bg-gray-700', appState.modo !== 'estudiante');
+                document.getElementById('btn-modo-profesor').classList.toggle('bg-amber-600', appState.modo === 'profesor');
+                document.getElementById('btn-modo-profesor').classList.toggle('bg-gray-700', appState.modo !== 'profesor');
+                document.getElementById('btn-agregar-celda').classList.toggle('hidden', appState.modo !== 'profesor');
+
+                appState.celdas.sort((a, b) => a.seq - b.seq).forEach(celda => {
+                    let badge = '';
+                    if (celda.resolver) {
+                        badge = celda.resuelto
+                            ? '<span class="bg-green-600 px-3 py-1 rounded-full text-xs badge-resuelto font-bold shadow-[0_0_10px_rgba(34,197,94,0.5)]">✓ SUPERADO</span>'
+                            : '<span class="bg-gray-700 px-3 py-1 rounded-full text-xs font-bold text-gray-300 border border-gray-600">Pendiente</span>';
+                    }
+
+                    const esCeldaActual = appState.celdaActualId === celda.id;
+                    const codigoReadOnly = appState.modo === 'profesor' && !esCeldaActual;
+                    const controlesProfesor = appState.modo === 'profesor'
+                        ? `
+                            <div class="flex items-center gap-2">
+                                <button onclick="InterfazUI.abrirModal('${celda.id}')" class="bg-amber-700 hover:bg-amber-600 px-3 py-1 rounded text-sm text-amber-100">✎</button>
+                                <button onclick="GestorEstado.eliminarCelda('${celda.id}')" class="bg-red-700 hover:bg-red-600 px-3 py-1 rounded text-sm text-red-100">🗑</button>
+                                <label class="flex items-center gap-1 text-xs text-gray-300">
+                                    <input type="checkbox" ${esCeldaActual ? 'checked' : ''} onclick="appState.celdaActualId='${celda.id}'; InterfazUI.renderizarTodas();">
+                                    Código actual
+                                </label>
+                            </div>
+                        `
+                        : '';
+
+                    const html = `
+                        <div class="bg-gray-900 border ${celda.resuelto ? 'border-green-800' : 'border-gray-700'} rounded-lg p-5 shadow-lg relative overflow-hidden">
+                            <div class="flex justify-between items-center mb-4 gap-3 flex-wrap">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-lg text-cyan-300 font-bold" id="titulo-${celda.id}">
+                                        <span class="text-gray-500 mr-2">[${celda.seq}]</span>${celda.titulo} ${badge}
+                                    </h3>
+                                    ${controlesProfesor}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="MotorEjecucion.ejecutarCeldaAsync('${celda.id}')" class="bg-cyan-900 hover:bg-cyan-700 border border-cyan-700 px-4 py-1.5 rounded text-sm text-cyan-100 transition">
+                                        Ejecutar Bloque
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="rounded-lg overflow-hidden border border-gray-800 shadow-inner">
+                                <textarea id="editor-${celda.id}" ${codigoReadOnly ? 'readonly' : ''}>${celda.codigo}</textarea>
+                            </div>
+                            <div class="bg-black text-gray-300 p-3 mt-3 rounded border border-gray-800 consola text-sm" id="consola-${celda.id}"></div>
+                        </div>
+                    `;
+                    contenedor.insertAdjacentHTML('beforeend', html);
+
+                    const editor = CodeMirror.fromTextArea(document.getElementById(`editor-${celda.id}`), {
+                        mode: 'python',
+                        theme: 'dracula',
+                        lineNumbers: true,
+                        readOnly: codigoReadOnly ? 'nocursor' : false
+                    });
+                    appState.editores[celda.id] = editor;
+                    editor.on('change', (cm) => {
+                        const nuevoValor = cm.getValue();
+                        if (nuevoValor !== celda.codigo) {
+                            GestorEstado.modificarCodigo(celda.id, nuevoValor);
+                        }
+                    });
+                });
+            },
+            imprimirEnConsola: (id, texto, clasesExtra = '') => {
+                const consola = document.getElementById(`consola-${id}`);
+                if (!consola) return;
+                const span = document.createElement('span');
+                span.textContent = texto;
+                if (clasesExtra) span.className = clasesExtra;
+                consola.appendChild(span);
+                consola.scrollTop = consola.scrollHeight;
+            },
+            validarCelda: (id) => {
+                const celda = appState.celdas.find(c => c.id === id);
+                if (!celda || !celda.resolver) return;
+                const outputGenerado = (appState.outputsTemporales[id] || '').trim();
+                const outputEsperado = (celda.respuesta_esperada || '').trim();
+                if (outputGenerado === outputEsperado) {
+                    if (!celda.resuelto) {
+                        celda.resuelto = true;
+                        InterfazUI.renderizarTodas();
+                    }
+                } else {
+                    celda.resuelto = false;
+                    InterfazUI.imprimirEnConsola(id, '\n[Sistema]: Salida incorrecta. Se esperaba un resultado distinto.\n', 'text-yellow-600 font-bold');
+                }
+            }
+        };
+
+        document.getElementById('btn-modo-estudiante').addEventListener('click', () => {
+            appState.modo = 'estudiante';
+            InterfazUI.renderizarTodas();
+        });
+        document.getElementById('btn-modo-profesor').addEventListener('click', () => {
+            appState.modo = 'profesor';
+            InterfazUI.renderizarTodas();
+        });
+        document.getElementById('btn-agregar-celda').addEventListener('click', () => {
+            const nueva = {
+                id: 'c_' + Date.now(),
+                seq: appState.celdas.length + 1,
+                titulo: 'Nueva Celda',
+                codigo: '# Nuevo bloque\n',
+                resolver: false,
+                respuesta_esperada: '',
+                resuelto: false
+            };
+            GestorEstado.crearCelda(nueva);
+        });
+
+        MotorEjecucion.inicializar();
+    </script>
+</body>
+</html>

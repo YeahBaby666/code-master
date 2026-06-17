@@ -1,23 +1,23 @@
 package com.codemaster.demo.controller;
 
+import com.codemaster.demo.model.Docente;
 import com.codemaster.demo.model.Estudiante;
+import com.codemaster.demo.model.RankingSemanal;
+import com.codemaster.demo.repository.DocenteRepository;
 import com.codemaster.demo.repository.EstudianteRepository;
+import com.codemaster.demo.repository.RankingSemanalRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
-
-import com.codemaster.demo.model.RankingSemanal;
-import com.codemaster.demo.repository.RankingSemanalRepository;
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.Locale;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/auth")
@@ -25,6 +25,7 @@ import java.util.Locale;
 public class AuthController {
 
     private final EstudianteRepository estudianteRepository;
+    private final DocenteRepository docenteRepository;
     private final RankingSemanalRepository rankingSemanalRepository;
 
 
@@ -49,16 +50,15 @@ public class AuthController {
 
     @GetMapping("/login")
     public String mostrarLogin(HttpSession session) {
-        // Si ya hay una sesión activa, redirigir al dashboard/retos
-        if (session.getAttribute("estudianteId") != null) {
-            return "redirect:/index"; 
+        if (session.getAttribute("estudianteId") != null || session.getAttribute("docenteId") != null) {
+            return "redirect:/index";
         }
         return "login";
     }
 
     @GetMapping("/registro")
     public String mostrarRegistro(HttpSession session) {
-        if (session.getAttribute("estudianteId") != null) {
+        if (session.getAttribute("estudianteId") != null || session.getAttribute("docenteId") != null) {
             return "redirect:/index";
         }
         return "registro";
@@ -105,27 +105,35 @@ rankingSemanalRepository.save(ranking);
     }
 
     @PostMapping("/login")
-    public String procesarLogin(@RequestParam String correo, 
-                                @RequestParam String contrasena, 
-                                HttpSession session, 
+    public String procesarLogin(@RequestParam String correo,
+                                @RequestParam String contrasena,
+                                HttpSession session,
                                 RedirectAttributes redirectAttributes) {
-        
-        Optional<Estudiante> estudianteOpt = estudianteRepository.findByCorreo(correo);
 
+        Optional<Estudiante> estudianteOpt = estudianteRepository.findByCorreo(correo);
         if (estudianteOpt.isPresent()) {
             Estudiante estudiante = estudianteOpt.get();
-            String hashIngresado = hashearContrasena(contrasena);
-
-            if (estudiante.getContrasena().equals(hashIngresado)) {
-                // Iniciar sesión guardando el ID y el Nombre en la HttpSession de Tomcat
+            if (estudiante.getContrasena().equals(hashearContrasena(contrasena))) {
                 session.setAttribute("estudianteId", estudiante.getId());
                 session.setAttribute("estudianteNombre", estudiante.getNombre());
-                
-                return "redirect:/index"; // Redirigir al panel principal
+                session.setAttribute("nombreUsuario", estudiante.getNombre());
+                session.setAttribute("rol", "estudiante");
+                return "redirect:/index";
             }
         }
 
-        // Falla genérica para no dar pistas a atacantes
+        Optional<Docente> docenteOpt = docenteRepository.findByCorreo(correo);
+        if (docenteOpt.isPresent()) {
+            Docente docente = docenteOpt.get();
+            if (docente.getContrasena().equals(contrasena)) {
+                session.setAttribute("docenteId", docente.getId());
+                session.setAttribute("docenteNombre", docente.getNombre());
+                session.setAttribute("nombreUsuario", docente.getNombre());
+                session.setAttribute("rol", "profesor");
+                return "redirect:/index";
+            }
+        }
+
         redirectAttributes.addFlashAttribute("error", "Credenciales incorrectas.");
         return "redirect:/auth/login";
     }

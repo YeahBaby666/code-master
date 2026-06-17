@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${reto.titulo}">Ejercicio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-cyan-400" th:text="${reto.titulo}"></h1>
+                <p class="text-gray-400 mt-1">Código de acceso: <span class="font-mono" th:text="${codigoAcceso}"></span></p>
+            </div>
+            <div class="flex gap-2">
+                <form th:action="@{/aula/ejercicio/{id}/reset(id=${reto.id})}" th:method="post">
+                    <button class="bg-yellow-600 px-4 py-2 rounded">Resetear ejercicio</button>
+                </form>
+                <a th:href="@{/aula}" class="bg-gray-700 px-4 py-2 rounded">Salir del aula</a>
+            </div>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6">
+            <p class="text-gray-300" th:text="${reto.descripcion}"></p>
+        </div>
+
+        <div th:if="${rol} == 'profesor'" class="mb-4 text-sm text-amber-300">
+            Modo profesor habilitado para administrar el ejercicio.
+        </div>
+
+        <iframe th:src="@{/aula/ejercicio/{id}/editor(id=${reto.id})}" class="w-full h-[800px] rounded-xl border border-gray-700"></iframe>
+    </div>
+</body>
+</html>

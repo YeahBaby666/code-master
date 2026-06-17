@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Sala: ' + ${sala.nombre}">Sala</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+    <div class="max-w-6xl mx-auto p-8">
+        <h1 class="text-3xl font-bold text-cyan-400 mb-2" th:text="${sala.nombre}"></h1>
+        <p class="text-gray-400 mb-6">Código de sala: <span class="font-mono text-white" th:text="${sala.codigoAcceso}"></span></p>
+
+        <div th:if="${retos != null and !retos.isEmpty()}" class="grid md:grid-cols-2 gap-4">
+            <div th:each="reto : ${retos}" class="bg-gray-900 border border-gray-700 rounded-xl p-5">
+                <h3 class="text-xl font-bold text-cyan-300" th:text="${reto.titulo}"></h3>
+                <p class="text-sm text-gray-400 mt-2" th:text="${reto.descripcion}"></p>
+                <a th:href="@{/aula/ejercicio/{id}(id=${reto.id})}" class="inline-block mt-4 bg-cyan-600 px-4 py-2 rounded">Abrir ejercicio</a>
+            </div>
+        </div>
+        <div th:if="${retos == null or retos.isEmpty()}" class="text-gray-400">Esta sala aún no tiene ejercicios.</div>
+    </div>
+</body>
+</html>

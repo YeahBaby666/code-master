@@ -1,5 +1,6 @@
 package com.codemaster.demo.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,7 +16,12 @@ import com.codemaster.demo.model.Reto;
 public interface RetoRepository extends JpaRepository<Reto, UUID> {
     
     Optional<Reto> findByCodigoAcceso(String codigoAcceso);
+
+    List<Reto> findByDocenteId(UUID docenteId);
+
+    List<Reto> findBySalaId(UUID salaId);
+
+    List<Reto> findByPublicoTrue();
     
-    // Búsqueda paginada para la vista pública de retos, optimizada por dificultad
     Page<Reto> findByTipoAccesoOrderByDificultadAsc(String tipoAcceso, Pageable pageable);
 }
