@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: monospace; }
         .CodeMirror { height: auto; border-radius: 0.5rem; font-family: monospace; font-size: 14px; }
@@ -29,6 +31,7 @@
                 <div>
                     <h1 class="text-3xl font-bold text-cyan-400">👨‍💻 Espacio de Trabajo: <span class="text-white">RETO-77X</span></h1>
                     <p class="text-gray-400 mt-2">Conexión al Motor: <span id="status" class="text-yellow-400">Iniciando entorno aislado...</span></p>
+                    <p class="text-gray-400 mt-1 text-sm">WebSocket: <span id="socket-status" class="text-yellow-300">desconectado</span></p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <button id="btn-modo-estudiante" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold transition">Modo Estudiante</button>
@@ -69,7 +72,7 @@
         </div>
     </div>
 
-    <script>
+    <script th:inline="javascript">
         // ==========================================
         // 1. ESTADO GLOBAL
         // ==========================================
@@ -86,6 +89,45 @@
             ],
             editores: {},
             outputsTemporales: {}
+        };
+
+        const ejercicioId = '[[${reto.id}]]';
+        const userRole = '[[${rol}]]';
+        const socketEndpoint = '/ws-ejercicios';
+        let stompClient = null;
+
+        const SocketBridge = {
+            conectar: () => {
+                const socket = new SockJS(socketEndpoint);
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, function () {
+                    document.getElementById('socket-status').textContent = 'conectado';
+                    document.getElementById('socket-status').className = 'text-green-400';
+                    stompClient.subscribe('/topic/ejercicio/' + ejercicioId, function (message) {
+                        const payload = JSON.parse(message.body);
+                        if (payload.mensaje) {
+                            InterfazUI.imprimirEnConsola(appState.celdaActualId, `\n[Socket] ${payload.mensaje}`, 'text-cyan-300');
+                        }
+                        if (payload.codigoActual) {
+                            const celda = appState.celdas[0];
+                            if (celda) {
+                                GestorEstado.modificarCodigo(celda.id, payload.codigoActual);
+                                InterfazUI.imprimirEnConsola(celda.id, '\n[Socket] Código actualizado desde el servidor.');
+                            }
+                        }
+                    });
+                }, function (error) {
+                    document.getElementById('socket-status').textContent = 'desconectado';
+                    document.getElementById('socket-status').className = 'text-yellow-300';
+                    console.error('WebSocket error:', error);
+                });
+            },
+            enviarEstado: (payload) => {
+                if (!stompClient || !stompClient.connected) {
+                    return;
+                }
+                stompClient.send('/app/ejercicio/' + ejercicioId + '/estado', {}, JSON.stringify(payload));
+            }
         };
 
         // ==========================================
@@ -281,12 +323,25 @@ except Exception as e: print(chr(10) + f"[Error de Sintaxis/Lógica]: {str(e)}")
                     try {
                         await MotorEjecucion.ejecutarApiProfesor(id, codigo);
                         InterfazUI.imprimirEnConsola(id, `\n[API Profesor] Ejecución enviada para curso ${appState.cursoId}.`, 'text-cyan-300');
+                        SocketBridge.enviarEstado({
+                            tipo: 'codigo-ejercicio',
+                            remitente: appState.modo,
+                            codigoActual: codigo,
+                            ruta: window.location.href
+                        });
                         InterfazUI.validarCelda(id);
                         return;
                     } catch (err) {
                         InterfazUI.imprimirEnConsola(id, '\n[API] No disponible; usando ejecución local.', 'text-yellow-500');
                     }
                 }
+
+                SocketBridge.enviarEstado({
+                    tipo: 'codigo-ejercicio',
+                    remitente: appState.modo,
+                    codigoActual: codigo,
+                    ruta: window.location.href
+                });
 
                 return new Promise((resolve) => {
                     MotorEjecucion.resolverPromesaActual = resolve;
@@ -464,6 +519,7 @@ except Exception as e: print(chr(10) + f"[Error de Sintaxis/Lógica]: {str(e)}")
         });
 
         MotorEjecucion.inicializar();
+        SocketBridge.conectar();
     </script>
 </body>
 </html>

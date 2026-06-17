@@ -29,7 +29,83 @@
             Modo profesor habilitado para administrar el ejercicio.
         </div>
 
+        <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <p id="ws-status" class="text-sm text-yellow-300">WebSocket: desconectado</p>
+                    <p id="ws-notification" class="text-sm text-gray-400"></p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="btn-copiar-ruta-ejercicio" class="bg-cyan-600 px-4 py-2 rounded hover:bg-cyan-500 text-white">Copiar ruta del ejercicio</button>
+                    <button id="btn-enviar-ruta" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500 text-white">Enviar ruta a WebSocket</button>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">El profesor y los estudiantes usan el mismo canal de socket para sincronizar el estado del ejercicio y compartir la ruta.</p>
+        </div>
+
         <iframe th:src="@{/aula/ejercicio/{id}/editor(id=${reto.id})}" class="w-full h-[800px] rounded-xl border border-gray-700"></iframe>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script th:inline="javascript">
+        const ejercicioId = '[[${reto.id}]]';
+        const userRole = '[[${rol}]]';
+        const socketEndpoint = '/ws-ejercicios';
+        let stompClient = null;
+
+        function conectarWebSocket() {
+            const socket = new SockJS(socketEndpoint);
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function () {
+                document.getElementById('ws-status').textContent = 'WebSocket: conectado';
+                document.getElementById('ws-status').className = 'text-sm text-green-400';
+                stompClient.subscribe('/topic/ejercicio/' + ejercicioId, function (message) {
+                    const payload = JSON.parse(message.body);
+                    const info = payload.mensaje || payload.tipo || 'Mensaje recibido';
+                    document.getElementById('ws-notification').textContent = `Evento: ${info}`;
+                    if (payload.codigoActual) {
+                        document.getElementById('ws-notification').textContent += ' — Código disponible del servidor.';
+                    }
+                });
+            }, function (error) {
+                document.getElementById('ws-status').textContent = 'WebSocket: desconectado';
+                document.getElementById('ws-status').className = 'text-sm text-yellow-300';
+                document.getElementById('ws-notification').textContent = 'No se pudo conectar al socket.';
+                console.error('WebSocket error', error);
+            });
+        }
+
+        function copiarTextoAlPortapapeles(texto) {
+            navigator.clipboard.writeText(texto).then(() => {
+                document.getElementById('ws-notification').textContent = 'Texto copiado al portapapeles.';
+            }).catch(() => {
+                document.getElementById('ws-notification').textContent = 'No se pudo copiar el texto.';
+            });
+        }
+
+        function enviarRutaEjercicio() {
+            if (!stompClient || !stompClient.connected) {
+                document.getElementById('ws-notification').textContent = 'Debes conectar primero el WebSocket.';
+                return;
+            }
+            const payload = {
+                tipo: 'ruta-ejercicio',
+                remitente: userRole,
+                ruta: window.location.href,
+                codigoAcceso: '[[${codigoAcceso}]]'
+            };
+            stompClient.send('/app/ejercicio/' + ejercicioId + '/estado', {}, JSON.stringify(payload));
+            document.getElementById('ws-notification').textContent = 'Ruta enviada al canal del ejercicio.';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            conectarWebSocket();
+            document.getElementById('btn-copiar-ruta-ejercicio').addEventListener('click', function () {
+                copiarTextoAlPortapapeles(window.location.href);
+            });
+            document.getElementById('btn-enviar-ruta').addEventListener('click', enviarRutaEjercicio);
+        });
+    </script>
 </body>
 </html>
