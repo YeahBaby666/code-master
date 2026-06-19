@@ -6,11 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -18,49 +15,42 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "ejercicios")
-public class Ejercicio {
+@Table(name = "ejercicios_docente")
+public class EjercicioDocente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "titulo")
     private String titulo;
 
     @Column(columnDefinition = "text")
     private String descripcion;
 
-    @Column(nullable = false, unique = true)
-    private String codigoAcceso;
-
-    @Column(nullable = false)
-    private Boolean habilitadoAula = false;
-
-    @Column(nullable = false)
+    @Column(name = "publico")
     private Boolean publico = false;
 
-    @Column(nullable = false)
+    @Column(name = "tipo_acceso")
     private String tipoAcceso;
 
     private Integer dificultad;
 
-    @Column(nullable = false)
+    @Column(name = "tipo_ejercicio")
     private String tipoEjercicio;
 
     @Column(columnDefinition = "text")
-    private String codigoInicial;
+    private String codigoInicial; 
 
-    @Column(columnDefinition = "text")
-    private String codigoActual;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "configuracion_ia", columnDefinition = "jsonb")
-    private Map<String, Object> configuracionIa;
+    @Column(name = "configuracion_ia", columnDefinition = "text")
+    private String configuracionIa;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "docente_id")
+    @JoinColumn(name = "docente_nombre")
     private Docente docente;
+
+    @Column(name = "puntaje", nullable = false)
+    private Integer puntaje = 0; // Puntaje por defecto 0
 
     @CreationTimestamp
     private OffsetDateTime creadoEn;

@@ -30,14 +30,20 @@ public class RegistroDocenteController {
                                           @RequestParam String contrasena,
                                           RedirectAttributes redirectAttributes) {
 
-        if (docenteRepository.findByCorreo(correo).isPresent()) {
-            redirectAttributes.addFlashAttribute("error", "Este correo ya está registrado como docente.");
+        // SANITIZACIÓN ESTRICTA: Minúsculas y eliminación total de espacios en blanco
+        String nombreSaneado = nombre.toLowerCase().replaceAll("\\s+", "");
+        String correoSaneado = correo.toLowerCase().replaceAll("\\s+", "");
+
+        // Validación doble: Verifica colisión en el Correo y en el Nombre (Primary Key)
+        if (docenteRepository.findByCorreo(correoSaneado).isPresent() || docenteRepository.findById(nombreSaneado).isPresent()) {
+            redirectAttributes.addFlashAttribute("error", "Este nombre de docente o correo ya está registrado.");
             return "redirect:/registro_docente";
         }
 
         Docente docente = new Docente();
-        docente.setNombre(nombre);
-        docente.setCorreo(correo);
+        // Se inyecta el dato ya saneado
+        docente.setNombre(nombreSaneado);
+        docente.setCorreo(correoSaneado);
         docente.setContrasena(contrasena);
         docenteRepository.save(docente);
 

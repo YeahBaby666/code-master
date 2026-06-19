@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Docente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-950 text-white min-h-screen p-8 selection:bg-amber-500 selection:text-white">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+            <h1 class="text-2xl font-bold text-amber-400">Panel Docente (Generador)</h1>
+            <a th:href="@{/index}" class="text-gray-400 hover:text-white transition-colors">Volver al Hub</a>
+        </div>
+
+        <div th:if="${mensaje}" class="bg-green-900/50 border border-green-500 text-green-300 px-4 py-3 rounded mb-6 text-sm font-bold shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+            <span th:text="${mensaje}"></span>
+        </div>
+        <div th:if="${error}" class="bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded mb-6 text-sm font-bold shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+            <span th:text="${error}"></span>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 h-fit shadow-lg">
+                <h2 class="text-lg font-bold mb-4 text-cyan-300">Crear Ejercicio Base</h2>
+                <form th:action="@{/ejercicio/crear}" method="POST" class="space-y-4 text-sm">
+                    <div>
+                        <input type="text" name="titulo" placeholder="Título del Reto" required
+                            class="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-gray-100">
+                    </div>
+                    <div>
+                        <textarea name="descripcion" placeholder="Descripción detallada" required
+                            class="w-full p-2 bg-gray-800 rounded border border-gray-700 h-24 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-gray-100"></textarea>
+                    </div>
+                    
+                    <div>
+                        <input type="number" name="puntaje" value="0" min="0" placeholder="Puntaje (XP)" required
+                            class="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-gray-100">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 text-gray-400 cursor-pointer hover:text-gray-300">
+                            <input type="checkbox" name="isPublico" value="true" class="w-4 h-4 accent-amber-500 rounded bg-gray-800 border-gray-700"> 
+                            ¿Visible en Retos Públicos?
+                        </label>
+                    </div>
+                    <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 py-2.5 rounded font-bold transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+                        Generar Código Único
+                    </button>
+                </form>
+            </div>
+
+            <div class="md:col-span-2 space-y-4">
+                <h2 class="text-lg font-bold text-amber-300">Mis Ejercicios</h2>
+                
+                <div th:if="${#lists.isEmpty(misEjercicios)}" class="text-gray-500 text-sm border border-gray-800 rounded-xl p-6 bg-gray-900/50 text-center">
+                    Aún no has creado ningún ejercicio.
+                </div>
+
+                <div th:each="e : ${misEjercicios}"
+                    class="bg-gray-900 border border-gray-800 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-gray-700 transition-colors shadow-md">
+                    <div>
+                        <h3 class="font-bold text-white text-lg flex items-center gap-2">
+                            <span th:text="${e.titulo}"></span>
+                            
+                            <form th:action="@{/ejercicio/{id}/toggle-public(id=${e.id})}" method="post" class="flex items-center m-0">
+                                <button type="submit" th:if="${e.publico}" title="Click para hacer Privado"
+                                        class="bg-cyan-900/50 hover:bg-cyan-800/80 text-cyan-300 text-[10px] px-2 py-0.5 rounded border border-cyan-800 uppercase tracking-wider cursor-pointer transition-colors shadow-[0_0_5px_rgba(8,145,178,0.3)]">
+                                    Público
+                                </button>
+                                <button type="submit" th:unless="${e.publico}" title="Click para hacer Público"
+                                        class="bg-gray-800 hover:bg-gray-700 text-gray-400 text-[10px] px-2 py-0.5 rounded border border-gray-700 uppercase tracking-wider cursor-pointer transition-colors">
+                                    Privado
+                                </button>
+                            </form>
+                        </h3>
+                        <p class="text-xs text-gray-500 font-mono mt-1">Ruta de Sala: <span class="text-amber-400 font-bold bg-amber-900/30 px-1 rounded select-all" th:text="${e.docente.nombre + '/' + e.id}"></span></p>
+                    </div>
+                    
+                    <div class="flex gap-2 items-stretch w-full md:w-auto flex-wrap md:flex-nowrap">
+                        <a th:href="@{/ejercicio/{id}(id=${e.id})}"
+                            class="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded text-sm h-full flex items-center justify-center transition-colors">
+                            Editar Base
+                        </a>
+
+                        <form th:action="@{/ejercicio/{id}/host(id=${e.id})}" method="post" class="flex gap-2 w-full md:w-auto">
+                            <input type="text" name="password" placeholder="Pass de Sala" class="w-full md:w-32 px-3 py-2 bg-gray-950 rounded text-sm border border-gray-700 focus:border-amber-500 outline-none text-center">
+                            <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold shadow-[0_0_10px_rgba(217,119,6,0.4)] transition-colors whitespace-nowrap">
+                                ▶ Transmitir
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

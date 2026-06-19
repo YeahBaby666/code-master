@@ -28,8 +28,6 @@ public class AuthController {
     private final DocenteRepository docenteRepository;
     private final RankingSemanalRepository rankingSemanalRepository;
 
-
-    // Método de Hashing nativo (SHA-256)
     private String hashearContrasena(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -45,8 +43,6 @@ public class AuthController {
             throw new RuntimeException("Error crítico al procesar la contraseña", e);
         }
     }
-
-    // --- VISTAS ---
 
     @GetMapping("/login")
     public String mostrarLogin(HttpSession session) {
@@ -64,41 +60,46 @@ public class AuthController {
         return "registro";
     }
 
-    // --- LÓGICA DE PROCESAMIENTO ---
-
     @PostMapping("/registro")
-    public String procesarRegistro(@RequestParam String nombre, 
-                                   @RequestParam String correo, 
-                                   @RequestParam String contrasena, 
-                                   RedirectAttributes redirectAttributes) {
-        
-        // Verificar si el correo ya existe
-        if (estudianteRepository.findByCorreo(correo).isPresent()) {
-            redirectAttributes.addFlashAttribute("error", "El correo ya está registrado.");
+    public String procesarRegistro(@RequestParam String nombre,
+            @RequestParam String correo,
+            @RequestParam String contrasena,
+            RedirectAttributes redirectAttributes) {
+
+        // SANITIZACIÓN ESTRICTA: Minúsculas y eliminación total de espacios en blanco
+        String nombreSaneado = nombre.toLowerCase().replaceAll("\\s+", "");
+        String correoSaneado = correo.toLowerCase().replaceAll("\\s+", "");
+
+        if (estudianteRepository.findById(nombreSaneado).isPresent() || estudianteRepository.findByCorreo(correoSaneado).isPresent()) {
+            redirectAttributes.addFlashAttribute("error", "El nombre o correo ya están registrados.");
             return "redirect:/auth/registro";
         }
 
-        // Crear y guardar el nuevo estudiante
         Estudiante nuevoEstudiante = new Estudiante();
-        nuevoEstudiante.setNombre(nombre);
-        nuevoEstudiante.setCorreo(correo);
+        // Se inyecta el dato ya saneado
+        nuevoEstudiante.setNombre(nombreSaneado);
+        nuevoEstudiante.setCorreo(correoSaneado);
         nuevoEstudiante.setContrasena(hashearContrasena(contrasena));
 
         Estudiante estudianteGuardado = estudianteRepository.save(nuevoEstudiante);
 
-LocalDate fechaActual = LocalDate.now();
-int anio = fechaActual.getYear();
-int semana = fechaActual.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
+        LocalDate fechaActual = LocalDate.now();
+        int anio = fechaActual.getYear();
+        int semana = fechaActual.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
 
-RankingSemanal ranking = new RankingSemanal();
-ranking.setEstudiante(estudianteGuardado);
-ranking.setAnio(anio);
-ranking.setSemana(semana);
-ranking.setPuntosAcumulados(0);
-ranking.setProblemasResueltos(0);
+        RankingSemanal ranking = new RankingSemanal();
+        ranking.setEstudiante(estudianteGuardado);
+        ranking.setAnio(anio);
+        ranking.setSemana(semana);
+        ranking.setPuntosAcumulados(0);
+        ranking.setProblemasResueltos(0);
+        
+        LocalDate inicioSemana = fechaActual.with(WeekFields.of(Locale.getDefault()).getFirstDayOfWeek());
+        LocalDate finSemana = inicioSemana.plusDays(6);
+        ranking.setFechaInicioSemana(inicioSemana);
+        ranking.setFechaFinSemana(finSemana);
 
-rankingSemanalRepository.save(ranking);
-
+        rankingSemanalRepository.save(ranking);
 
         redirectAttributes.addFlashAttribute("exito", "Registro exitoso. Inicia sesión para continuar.");
         return "redirect:/auth/login";
@@ -106,16 +107,15 @@ rankingSemanalRepository.save(ranking);
 
     @PostMapping("/login")
     public String procesarLogin(@RequestParam String correo,
-                                @RequestParam String contrasena,
-                                HttpSession session,
-                                RedirectAttributes redirectAttributes) {
+            @RequestParam String contrasena,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
 
         Optional<Estudiante> estudianteOpt = estudianteRepository.findByCorreo(correo);
         if (estudianteOpt.isPresent()) {
             Estudiante estudiante = estudianteOpt.get();
             if (estudiante.getContrasena().equals(hashearContrasena(contrasena))) {
-                session.setAttribute("estudianteId", estudiante.getId());
-                session.setAttribute("estudianteNombre", estudiante.getNombre());
+                session.setAttribute("estudianteId", estudiante.getNombre());
                 session.setAttribute("nombreUsuario", estudiante.getNombre());
                 session.setAttribute("rol", "estudiante");
                 return "redirect:/index";
@@ -126,8 +126,7 @@ rankingSemanalRepository.save(ranking);
         if (docenteOpt.isPresent()) {
             Docente docente = docenteOpt.get();
             if (docente.getContrasena().equals(contrasena)) {
-                session.setAttribute("docenteId", docente.getId());
-                session.setAttribute("docenteNombre", docente.getNombre());
+                session.setAttribute("docenteId", docente.getNombre());
                 session.setAttribute("nombreUsuario", docente.getNombre());
                 session.setAttribute("rol", "profesor");
                 return "redirect:/index";
@@ -140,7 +139,7 @@ rankingSemanalRepository.save(ranking);
 
     @GetMapping("/logout")
     public String cerrarSesion(HttpSession session, RedirectAttributes redirectAttributes) {
-        session.invalidate(); // Destruye la sesión en el servidor
+        session.invalidate();
         redirectAttributes.addFlashAttribute("exito", "Has cerrado sesión correctamente.");
         return "redirect:/auth/login";
     }

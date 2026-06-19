@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial - CodeMaster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-mono selection:bg-cyan-500 selection:text-white p-8">
+    <div class="max-w-4xl mx-auto space-y-8">
+        <div class="flex justify-between items-center border-b border-cyan-900 pb-4">
+            <h1 class="text-3xl font-bold text-cyan-400 flex items-center gap-3">
+                📜 Historial de <span class="text-white" th:text="${nombreEstudiante}"></span>
+            </h1>
+            <a th:href="@{/ranking}" class="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                ← Volver al Ranking
+            </a>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-lg">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-950 border-b border-gray-800 text-gray-400 text-sm tracking-wider uppercase">
+                        <th class="p-4 font-bold">Ejercicio Resuelto</th>
+                        <th class="p-4 font-bold">Docente Creador</th>
+                        <th class="p-4 font-bold text-center">Puntaje Recibido</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    <tr th:if="${#lists.isEmpty(historial)}" class="bg-gray-900">
+                        <td colspan="3" class="p-8 text-center text-gray-500">Aún no ha superado ningún nodo puntuable.</td>
+                    </tr>
+                    <tr th:each="h : ${historial}" class="bg-gray-900 hover:bg-gray-800 transition-colors">
+                        <td class="p-4 font-bold text-cyan-300" th:text="${h.ejercicioOriginal.titulo}">Título</td>
+                        <td class="p-4 text-gray-300">👨‍🏫 <span th:text="${h.ejercicioOriginal.docente.nombre}">Docente</span></td>
+                        <td class="p-4 text-center font-bold text-green-400 text-lg">
+                            +<span th:text="${h.puntajeObtenido}">0</span> XP
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

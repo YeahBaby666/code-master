@@ -1,118 +1,191 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hub Central - CodeMaster</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Efecto de borde neón para las tarjetas */
-        .neon-card {
-            background: rgba(17, 24, 39, 0.7);
+        .neon-border {
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.8);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-        .neon-card:hover {
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1);
-            border-color: rgba(0, 255, 255, 0.6);
-            transform: translateY(-5px);
-        }
-        .neon-card-purple:hover {
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.1);
-            border-color: rgba(168, 85, 247, 0.6);
-            transform: translateY(-5px);
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen font-mono selection:bg-cyan-500 selection:text-white relative flex flex-col">
 
-    <canvas id="matrix-canvas" class="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none"></canvas>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-mono selection:bg-cyan-500 selection:text-white">
 
-    <header class="relative z-10 border-b border-cyan-900/50 bg-gray-950/80 backdrop-blur-md px-6 py-4 flex justify-between items-center shadow-[0_4px_20px_rgba(0,255,255,0.1)]">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]">🤖</span>
-            <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest uppercase">
-                CodeMaster_OS
-            </h1>
-        </div>
-        <div class="flex items-center space-x-4">
-            <span class="text-sm text-cyan-200">User: <span class="text-white font-bold" th:text="${nombreEstudiante}">Estudiante</span></span>
-            <a th:href="@{/auth/logout}" class="border border-red-500/50 text-red-400 hover:bg-red-500/20 px-4 py-1 rounded transition-colors text-sm shadow-[0_0_10px_rgba(255,0,0,0.2)]">
-                Desconectar
-            </a>
+    <header class="border-b border-gray-800 glass-panel px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+        <h1
+            class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-widest uppercase">
+            CodeMaster_OS
+        </h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-cyan-200">User: <span class="text-white font-bold"
+                    th:text="${nombreEstudiante}">Estudiante</span></span>
+            <a th:href="@{/auth/logout}"
+                class="text-red-400 hover:text-red-300 text-sm transition-colors">Desconectar</a>
         </div>
     </header>
 
-    <main class="relative z-10 flex-1 container mx-auto px-6 py-12">
-        
-        <div class="mb-10 text-center md:text-left border-l-4 border-cyan-500 pl-4">
-            <h2 class="text-2xl text-white font-bold tracking-wide">Panel de Control Principal</h2>
-            <p class="text-cyan-400 text-sm mt-1">>> Seleccione un módulo de ejecución</p>
-        </div>
+    <div th:if="${error}"
+        class="bg-red-900 border border-red-500 text-red-200 px-4 py-3 rounded relative max-w-4xl mx-auto mt-4 text-center font-bold">
+        <span th:text="${error}"></span>
+    </div>
+    <div th:if="${exito}"
+        class="bg-green-900 border border-green-500 text-green-200 px-4 py-3 rounded relative max-w-4xl mx-auto mt-4 text-center font-bold">
+        <span th:text="${exito}"></span>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            <a th:href="@{/retos}" class="neon-card rounded-xl p-6 group cursor-pointer flex flex-col items-start">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]">💻</div>
-                <h3 class="text-xl text-cyan-300 font-bold mb-2 uppercase">Entrenamiento Libre</h3>
-                <p class="text-gray-400 text-sm flex-1 mb-4">Accede a retos de programación asíncronos y recibe feedback estructural de la IA.</p>
-                <span class="text-cyan-400 text-xs font-bold bg-cyan-900/30 px-2 py-1 rounded">>> Ejecutar_Módulo</span>
+    <main class="container mx-auto px-4 py-8 space-y-16">
+
+        <section>
+            <h2 class="text-2xl font-bold text-cyan-400 mb-6 border-b border-cyan-900 pb-2">>> Módulo 1: Retos Públicos
+                (Offline)</h2>
+
+            <div th:if="${#lists.isEmpty(retosPublicos)}"
+                class="text-gray-500 border border-gray-800 rounded-xl p-8 bg-gray-900/50 text-center">
+                Aún no hay retos públicos disponibles.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div th:each="reto : ${retosPublicos}"
+                    class="bg-gray-900 border border-gray-700 rounded-xl p-5 hover:border-cyan-500 transition-colors shadow-lg relative overflow-hidden">
+
+                    <div th:if="${ejerciciosVinculados != null and ejerciciosVinculados.contains(reto.id)}"
+                        class="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+                        <div
+                            class="bg-indigo-600 text-white text-[10px] font-bold text-center absolute transform rotate-45 top-3 -right-6 w-24 shadow-[0_0_10px_rgba(79,70,229,0.5)]">
+                            EN CURSO
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-white pr-8" th:text="${reto.titulo}"></h3>
+                    <p class="text-xs text-gray-500 mt-1 font-mono">Autor: <span class="text-cyan-400"
+                            th:text="${reto.docente?.nombre ?: 'Sistema (Registro Huérfano)'}"></span></p>
+
+                    <div class="flex gap-2 mt-5">
+                        <button th:data-id="${reto.id}"
+                            onclick="document.getElementById('modal-detalles-' + this.getAttribute('data-id')).classList.remove('hidden')"
+                            class="bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-2 rounded text-sm w-full transition-colors">Detalles</button>
+                        <a th:href="@{/ejercicio/{id}(id=${reto.id})}"
+                            th:classappend="${ejerciciosVinculados != null and ejerciciosVinculados.contains(reto.id)} ? 'bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.3)]' : 'bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_10px_rgba(8,145,178,0.3)]'"
+                            class="text-white px-3 py-2 rounded text-sm w-full text-center font-bold transition-all">
+                            <span
+                                th:text="${ejerciciosVinculados != null and ejerciciosVinculados.contains(reto.id)} ? 'Continuar' : 'Resolver'"></span>
+                        </a>
+                    </div>
+
+                    <div th:id="'modal-detalles-' + ${reto.id}"
+                        class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                        <div
+                            class="bg-gray-900 border border-cyan-800 rounded-xl p-6 max-w-md w-full relative shadow-[0_0_30px_rgba(0,255,255,0.1)]">
+                            <button th:data-id="${reto.id}"
+                                onclick="document.getElementById('modal-detalles-' + this.getAttribute('data-id')).classList.add('hidden')"
+                                class="absolute top-3 right-3 text-gray-400 hover:text-white">✕</button>
+                            <h4 class="text-xl font-bold text-cyan-400 mb-3 pr-6" th:text="${reto.titulo}"></h4>
+                            <p class="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed"
+                                th:text="${reto.descripcion}"></p>
+
+                            <form th:if="${ejerciciosVinculados != null and ejerciciosVinculados.contains(reto.id)}"
+                                th:action="@{/ejercicio/{id}/reset(id=${reto.id})}" method="post"
+                                class="mt-5 border-t border-gray-800 pt-4">
+                                <button type="submit"
+                                    onclick="return confirm('¿Estás seguro de reiniciar? Perderás todo el progreso local en este ejercicio.')"
+                                    class="w-full bg-red-900/30 hover:bg-red-800 border border-red-800/50 text-red-300 py-2 rounded text-sm font-bold transition-colors">
+                                    ⚠ Resetear Código al Original
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-bold text-purple-400 mb-6 border-b border-purple-900 pb-2">>> Módulo 2: Sesiones en
+                Vivo (WebSocket)</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <button onclick="document.getElementById('modal-estudiante').classList.remove('hidden')"
+                    class="bg-gray-900 border border-gray-800 hover:border-cyan-500 rounded-xl p-8 text-left transition-colors shadow-lg">
+                    <h3 class="text-2xl font-bold text-cyan-300">👨‍🎓 Ingreso Estudiante</h3>
+                    <p class="text-gray-400 text-sm mt-2">Conectarse a la sesión WebSocket del profesor mediante código
+                        de sala.</p>
+                </button>
+
+                <button onclick="document.getElementById('modal-profesor').classList.remove('hidden')"
+                    class="bg-gray-900 border border-gray-800 hover:border-amber-500 rounded-xl p-8 text-left transition-colors shadow-lg">
+                    <h3 class="text-2xl font-bold text-amber-300">👨‍🏫 Panel Docente</h3>
+                    <p class="text-gray-400 text-sm mt-2">Gestor de ejercicios, creación de retos y transmisión de aula
+                        virtual.</p>
+                </button>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-bold text-green-400 mb-6 border-b border-green-900 pb-2">>> Módulo 3: Métricas</h2>
+            <a th:href="@{/ranking}"
+                class="inline-block bg-gray-900 border border-green-900 hover:border-green-500 rounded-xl p-6 transition-colors shadow-lg">
+                <h3 class="text-xl font-bold text-green-300">🏆 Ver Ranking Semanal</h3>
+                <p class="text-gray-400 text-sm mt-1">Consulta tus puntos, desempeño y problemas resueltos en el
+                    servidor.</p>
             </a>
-
-            <a th:href="@{/aula}" class="neon-card-purple neon-card rounded-xl p-6 group cursor-pointer flex flex-col items-start">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]">🏫</div>
-                <h3 class="text-xl text-purple-300 font-bold mb-2 uppercase">Aulas Virtuales</h3>
-                <p class="text-gray-400 text-sm flex-1 mb-4">Ingresa con un código para resolver asignaciones y quizzes controlados por docentes.</p>
-                <span class="text-purple-400 text-xs font-bold bg-purple-900/30 px-2 py-1 rounded">>> Conectar_Sala</span>
-            </a>
-
-            <a th:href="@{/ranking}" class="neon-card rounded-xl p-6 group cursor-pointer flex flex-col items-start">
-                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(0,255,100,0.6)]">📊</div>
-                <h3 class="text-xl text-green-300 font-bold mb-2 uppercase">Métricas & Ranking</h3>
-                <p class="text-gray-400 text-sm flex-1 mb-4">Visualiza tus estadísticas semanales, puntos acumulados y análisis cognitivo.</p>
-                <span class="text-green-400 text-xs font-bold bg-green-900/30 px-2 py-1 rounded border border-green-800/50">>> Ver_Estadísticas</span>
-            </a>
-
-        </div>
+        </section>
     </main>
 
-    <script>
-        const canvas = document.getElementById('matrix-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    <div id="modal-estudiante" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 neon-border rounded-xl p-6 max-w-sm w-full relative">
+            <button onclick="document.getElementById('modal-estudiante').classList.add('hidden')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+            <h3 class="text-xl font-bold text-cyan-400 mb-4">Unirse a Sesión STOMP</h3>
 
-        const chars = '01010101<>{}[]/\\'.split('');
-        const fontSize = 14;
-        const columns = canvas.width / fontSize;
-        const drops = [];
-        for(let x = 0; x < columns; x++) drops[x] = 1;
+            <form id="form-join-live" onsubmit="event.preventDefault(); 
+                          let codigo = document.getElementById('sala-codigo').value.trim();
+                          codigo = codigo.replace(/^\/+|\/+$/g, ''); 
+                          const pass = document.getElementById('sala-pass').value;
+                          window.location.href='/ejercicio/live/' + codigo + '?pass=' + encodeURIComponent(pass);">
 
-        let hue = 180; 
+                <label class="block text-xs text-gray-400 mb-1">Ruta Exacta (NombreProfesor/EjercicioID)</label>
+                <input type="text" id="sala-codigo" required placeholder="Ejemplo: aldo/276c9bcf-..."
+                    class="w-full p-2.5 rounded bg-gray-950 border border-gray-700 mb-3 text-white font-mono focus:border-cyan-500 outline-none transition-colors">
+                
+                <label class="block text-xs text-gray-400 mb-1">Contraseña (Si el profesor la asignó)</label>
+                <input type="password" id="sala-pass" placeholder="Contraseña de la sala (Opcional)"
+                    class="w-full p-2.5 rounded bg-gray-950 border border-gray-700 mb-5 text-white font-mono focus:border-cyan-500 outline-none transition-colors">
 
-        function draw() {
-            ctx.fillStyle = 'rgba(17, 24, 39, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                <button type="submit"
+                    class="w-full bg-cyan-600 hover:bg-cyan-500 py-2.5 rounded font-bold transition-colors shadow-[0_0_15px_rgba(8,145,178,0.4)]">Conectar al Socket</button>
+            </form>
+        </div>
+    </div>
 
-            hue = (hue + 0.3) % 360; 
-            ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
-            ctx.font = fontSize + 'px monospace';
+    <div id="modal-profesor" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-gray-900 border border-amber-700 rounded-xl p-6 max-w-sm w-full relative text-center shadow-[0_0_20px_rgba(217,119,6,0.2)]">
+            <button onclick="document.getElementById('modal-profesor').classList.add('hidden')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
 
-            for(let i = 0; i < drops.length; i++) {
-                const text = chars[Math.floor(Math.random() * chars.length)];
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                if(drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
-                    drops[i] = 0;
-                }
-                drops[i]++;
-            }
-        }
-        setInterval(draw, 50); 
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-    </script>
+            <div th:if="${session.docenteId != null}">
+                <h3 class="text-xl font-bold text-amber-400 mb-4">Acceso Verificado</h3>
+                <a th:href="@{/panel_docente}"
+                    class="block w-full bg-amber-600 hover:bg-amber-500 py-2.5 rounded font-bold text-white transition-colors shadow-[0_0_15px_rgba(217,119,6,0.4)]">Ir
+                    al Generador</a>
+            </div>
+
+            <div th:unless="${session.docenteId != null}">
+                <h3 class="text-xl font-bold text-red-500 mb-2">Acceso Denegado</h3>
+                <p class="text-sm text-gray-400">Tu cuenta actual es de Estudiante. No tienes permisos para administrar
+                    o transmitir salas virtuales.</p>
+            </div>
+        </div>
+    </div>
+
 </body>
+
 </html>
