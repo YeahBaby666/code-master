@@ -22,12 +22,6 @@
 
 ---
 
-## ⚙️ Stack Tecnológico
-
-* **Lenguaje:** Java 25
-* **Framework:** Spring Boot 3 (Web, Data JPA, Validation)
-* **Base de Datos:** PostgreSQL (alojada en Supabase)
-* **Arquitectura de Datos:** Modelo relacional transaccional optimizado con columnas `JSONB` para manejar la asimetría de los prompts y respuestas de la IA.
 
 ## 🚀 Características Principales
 
@@ -37,3 +31,31 @@
 * **Seguridad y Rendimiento:** Uso intensivo de hilos virtuales y procesamiento `@Async` para aislar la latencia de las llamadas a la API de los LLMs.
 
 ---
+
+
+
+
+# CodeMaster 👨‍💻
+
+Plataforma interactiva de aprendizaje de programación con ejecución en tiempo real y entornos aislados.
+
+### 🚀 Stack Tecnológico
+* **Backend:** Java 25, Spring Boot 3, PostgreSQL.
+* **Frontend:** Tailwind CSS, SockJS, STOMP.
+* **Motor de Ejecución:** Python (vía [Pyodide](https://pyodide.org/)) ejecutado en WebWorkers aislados.
+* **Comunicación:** WebSockets para sincronización en tiempo real (Modo Live).
+
+### 📂 Estructura del Proyecto
+* `/src`: Código fuente del backend (Spring Boot).
+* `/resources/templates`: Frontend (HTML/Thymeleaf).
+* `/docs`: Documentación técnica y de usuario.
+
+### 🛠 Instalación y Ejecución
+1. Configura tu base de datos PostgreSQL.
+2. Clona el proyecto: `git clone [url]`
+3. Ejecuta el backend: `./gradlew bootRun`
+4. Accede a `http://localhost:8080`
+
+### 📖 Documentación Detallada
+* [Guía Arquitectónica](/docs/ARCHITECTURE.md) - Entiende el motor de celdas y el bus de eventos.
+* [Guía de Usuario](/docs/USER_GUIDE.md) - Cómo usar el entorno como profesor o alumno.
