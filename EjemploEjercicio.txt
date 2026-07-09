@@ -1,0 +1,50 @@
+=============================================================================
+TEMA: Lógica de Iteración y Condicionales - Búsqueda de Máximo y Mínimo
+INSTRUCCIONES PARA EL DOCENTE EN LA PLATAFORMA CODEMASTER:
+1. Crea la CELDA 1 (Estudiante). Haz clic en el botón ✎ (Editar Variables).
+2. Marca la casilla "Resolver".
+3. En el campo "Respuesta esperada", escribe exactamente: (80, 15)
+4. Crea la CELDA 2 (Docente). Asegúrate de que su "Secuencia" sea mayor a la Celda 1.
+=============================================================================
+
+[COPIAR EN CELDA 1 - VISTA DEL ALUMNO / SEQ: 1 / EVALUABLE: SÍ]
+
+# =====================================================================
+# RETO: ANÁLISIS DE TEMPERATURAS INDUSTRIALES
+# =====================================================================
+# El sistema te enviará una lista de temperaturas automáticamente.
+# Tu misión es encontrar la temperatura máxima y la mínima.
+# RESTRICCIÓN ESTRICTA: Está prohibido usar max(), min() o sort(). 
+# =====================================================================
+
+def procesar_temperaturas(datos):
+    # 'datos' es inyectado automáticamente por el evento del sistema
+    
+    # 1. Inicializa tus variables con el primer elemento de la lista
+    max_temp = 0 # CORRIGE ESTA LÍNEA
+    min_temp = 0 # CORRIGE ESTA LÍNEA
+    
+    # 2. Usa condicionales para actualizar max_temp y min_temp
+    for temperatura in datos:
+        pass # ELIMINA el pass y escribe tu lógica aquí
+        
+    # 3. Envío al validador de la interfaz
+    api.submit((max_temp, min_temp))
+    print(f"Tu algoritmo detectó -> Máxima: {max_temp}, Mínima: {min_temp}")
+
+# 4. REGISTRO DEL OÍDO (LISTENER)
+# La función queda a la espera. Se ejecutará cuando el docente envíe los datos.
+api.listen("datos_temperatura", procesar_temperaturas)
+
+
+[COPIAR EN CELDA 2 - EMISOR DOCENTE / SEQ: 2 / OCULTA AL ALUMNO]
+
+# 1. Datos estáticos configurados
+# Estos números generan la respuesta (80, 15) configurada en el Modal UI.
+temperaturas_hoy = [45, 22, 68, 15, 80, 33, 40]
+
+# 2. DISPARADOR DEL EVENTO (SEND)
+# Como esta celda se ejecuta después (Seq 2), detecta el listener del estudiante (Seq 1)
+# y le inyecta los datos de inmediato, disparando su función.
+api.send("datos_temperatura", temperaturas_hoy)
+print("[Sistema] Datos inyectados. Evento disparado.")
